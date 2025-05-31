@@ -3,10 +3,12 @@ import { getServerSession } from 'next-auth';
 import connectDB from '@/lib/db';
 import Vote from '@/models/Vote';
 import Contest from '@/models/Contest';
+import { authOptions } from '@/lib/auth';
+import mongoose from 'mongoose';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -15,10 +17,23 @@ export async function POST(request: Request) {
     }
 
     const { contestId, beat1Id, beat2Id, votedBeatId } = await request.json();
+    console.log('Vote request data:', { contestId, beat1Id, beat2Id, votedBeatId, userId: session.user.id });
 
     if (!contestId || !beat1Id || !beat2Id || !votedBeatId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Valider que les IDs sont des ObjectIds MongoDB valides
+    if (!mongoose.Types.ObjectId.isValid(contestId) ||
+        !mongoose.Types.ObjectId.isValid(beat1Id) ||
+        !mongoose.Types.ObjectId.isValid(beat2Id) ||
+        !mongoose.Types.ObjectId.isValid(votedBeatId) ||
+        !mongoose.Types.ObjectId.isValid(session.user.id)) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
         { status: 400 }
       );
     }
@@ -65,19 +80,30 @@ export async function POST(request: Request) {
     }
 
     // Créer le vote
-    const vote = await Vote.create({
+    const voteData = {
       contest: contestId,
       beat1: beat1Id,
       beat2: beat2Id,
       votedBeat: votedBeatId,
       voter: session.user.id,
-    });
+    };
+    console.log('Creating vote with data:', voteData);
+
+    const vote = await Vote.create(voteData);
+    console.log('Vote created successfully:', vote);
 
     return NextResponse.json(vote);
   } catch (error) {
     console.error('Error submitting vote:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
     return NextResponse.json(
-      { error: 'Failed to submit vote' },
+      { error: 'Failed to submit vote', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

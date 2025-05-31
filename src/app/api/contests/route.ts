@@ -8,6 +8,13 @@ export async function GET() {
     
     const contests = await Contest.find({ status: 'active' })
       .populate('createdBy', 'name avatar')
+      .populate({
+        path: 'submissions',
+        populate: {
+          path: 'user',
+          select: 'name avatar'
+        }
+      })
       .sort({ startDate: -1 });
 
     return NextResponse.json(contests);
