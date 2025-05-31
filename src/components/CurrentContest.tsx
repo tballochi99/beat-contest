@@ -5,27 +5,34 @@ import Link from 'next/link';
 
 interface Contest {
   _id: string;
-  themeArtist: string;
+  title: string;
+  description: string;
+  theme: string;
   startDate: string;
   endDate: string;
-  currentRound: number;
+  coverImage: string;
+  rules: string;
   status: string;
+  createdBy: {
+    name: string;
+    avatar: string;
+  };
 }
 
 export default function CurrentContest() {
-  const [contest, setContest] = useState<Contest | null>(null);
+  const [contests, setContests] = useState<Contest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchContest = async () => {
+    const fetchContests = async () => {
       try {
-        const response = await fetch('/api/contests/current');
+        const response = await fetch('/api/contests');
         if (!response.ok) {
-          throw new Error('Failed to fetch contest');
+          throw new Error('Failed to fetch contests');
         }
         const data = await response.json();
-        setContest(data);
+        setContests(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -33,7 +40,7 @@ export default function CurrentContest() {
       }
     };
 
-    fetchContest();
+    fetchContests();
   }, []);
 
   if (loading) {
@@ -52,10 +59,10 @@ export default function CurrentContest() {
     );
   }
 
-  if (!contest) {
+  if (contests.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-400 mb-4">No active contest at the moment</p>
+        <p className="text-gray-400 mb-4">No active contests at the moment</p>
         <Link
           href="/contests"
           className="text-purple-500 hover:text-purple-400"
@@ -67,29 +74,36 @@ export default function CurrentContest() {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
-      <h2 className="text-2xl font-bold mb-4">Current Contest</h2>
-      <div className="space-y-4">
-        <div>
-          <p className="text-gray-400">Theme Artist</p>
-          <p className="text-xl font-semibold">{contest.themeArtist}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Current Round</p>
-          <p className="text-xl font-semibold">Round {contest.currentRound}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Time Remaining</p>
-          <p className="text-xl font-semibold">
-            {new Date(contest.endDate).toLocaleDateString()}
-          </p>
-        </div>
-        <Link
-          href={`/contests/${contest._id}`}
-          className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
-        >
-          View Details
-        </Link>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold mb-4">Active Contests</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {contests.map((contest) => (
+          <Link
+            key={contest._id}
+            href={`/contests/${contest._id}`}
+            className="group bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-700 transition-colors"
+          >
+            <div className="relative h-48">
+              <img
+                src={contest.coverImage}
+                alt={contest.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            </div>
+            <div className="p-4">
+              <h3 className="text-xl font-semibold mb-2 group-hover:text-purple-400 transition-colors">
+                {contest.title}
+              </h3>
+              <p className="text-gray-300 text-sm line-clamp-2">
+                {contest.description}
+              </p>
+              <div className="mt-2 text-sm text-gray-400">
+                Theme: {contest.theme}
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

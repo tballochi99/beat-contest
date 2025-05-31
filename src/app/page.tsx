@@ -1,7 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import CurrentContest from '@/components/CurrentContest';
+import { useSession } from 'next-auth/react';
 
 export default function Home() {
+  const { data: session } = useSession();
+
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="text-center mb-16">
@@ -14,12 +19,21 @@ export default function Home() {
         </p>
         
         <div className="space-y-4">
-          <Link
-            href="/auth/signin"
-            className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
-          >
-            Sign In to Participate
-          </Link>
+          {!session ? (
+            <Link
+              href="/auth/signin"
+              className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+            >
+              Sign In to Participate
+            </Link>
+          ) : (
+            <Link
+              href="/contests"
+              className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+            >
+              View All Contests
+            </Link>
+          )}
         </div>
       </div>
 

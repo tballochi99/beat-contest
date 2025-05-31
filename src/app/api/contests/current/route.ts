@@ -6,19 +6,28 @@ export async function GET() {
   try {
     await connectDB();
     
-    const currentContest = await Contest.findOne({
+    const now = new Date();
+    const contest = await Contest.findOne({
       status: 'active',
-      startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() }
-    }).populate('createdBy', 'name avatar');
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    })
+    .populate('createdBy', 'name avatar')
+    .populate('submissions.user', 'name avatar');
 
-    if (!currentContest) {
-      return NextResponse.json({ error: 'No active contest found' }, { status: 404 });
+    if (!contest) {
+      return NextResponse.json(
+        { error: 'No active contest found' },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(currentContest);
+    return NextResponse.json(contest);
   } catch (error) {
     console.error('Error fetching current contest:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch current contest' },
+      { status: 500 }
+    );
   }
 } 
