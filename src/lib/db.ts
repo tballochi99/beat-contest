@@ -1,4 +1,7 @@
 import mongoose from 'mongoose';
+import '@/models/Submission';
+import '@/models/Contest';
+import '@/models/User';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -31,9 +34,7 @@ async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {

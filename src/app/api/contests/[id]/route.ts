@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
+import Submission from '@/models/Submission';
 import Contest from '@/models/Contest';
 
 export async function GET(
@@ -11,7 +12,13 @@ export async function GET(
     
     const contest = await Contest.findById(params.id)
       .populate('createdBy', 'name avatar')
-      .populate('submissions.user', 'name avatar');
+      .populate({
+        path: 'submissions',
+        populate: {
+          path: 'user',
+          select: 'name avatar'
+        }
+      });
 
     if (!contest) {
       return NextResponse.json(

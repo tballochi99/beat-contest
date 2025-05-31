@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Beat Contest',
-  description: 'Join the community of producers and compete in beat contests',
+  description: 'Share your beats and compete with other producers',
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-900 text-white min-h-screen`}>
+      <body suppressHydrationWarning className={`${inter.className} bg-gray-900 text-white min-h-screen`}>
         <Providers>
           <Navbar />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -31,8 +31,8 @@ const contestSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'active', 'ended'],
-    default: 'draft',
+    enum: ['upcoming', 'active', 'ended'],
+    default: 'upcoming',
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -40,28 +40,15 @@ const contestSchema = new mongoose.Schema({
     required: true,
   },
   submissions: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
-    trackUrl: String,
-    submittedAt: Date,
-    votes: [{
-      user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-      score: Number,
-      votedAt: Date,
-    }],
-  }],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission'
+  }]
 }, {
   timestamps: true,
 });
 
-// Supprimer le modèle existant s'il existe pour éviter les conflits
-if (mongoose.models.Contest) {
-  delete mongoose.models.Contest;
-}
+// Enregistrer le modèle de manière sûre
+const modelName = 'Contest';
+const Contest = mongoose.models[modelName] || mongoose.model(modelName, contestSchema);
 
-export default mongoose.model('Contest', contestSchema); 
+export default Contest; 

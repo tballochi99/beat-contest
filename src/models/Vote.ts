@@ -1,48 +1,38 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-export interface IVote extends Document {
-  beat1Id: mongoose.Types.ObjectId;
-  beat2Id: mongoose.Types.ObjectId;
-  votedBeatId: mongoose.Types.ObjectId;
-  userId?: mongoose.Types.ObjectId;
-  contestId: string;
-  ipHash?: string;
-  createdAt: Date;
-}
-
-const VoteSchema: Schema = new Schema({
-  beat1Id: {
-    type: Schema.Types.ObjectId,
-    ref: 'Beat',
+const voteSchema = new mongoose.Schema({
+  contest: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Contest',
     required: true,
   },
-  beat2Id: {
-    type: Schema.Types.ObjectId,
-    ref: 'Beat',
+  beat1: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission',
     required: true,
   },
-  votedBeatId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Beat',
+  beat2: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission',
     required: true,
   },
-  userId: {
-    type: Schema.Types.ObjectId,
+  votedBeat: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Submission',
+    required: true,
+  },
+  voter: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-  },
-  contestId: {
-    type: String,
     required: true,
-  },
-  ipHash: {
-    type: String,
   },
 }, {
   timestamps: true,
 });
 
-// Compound index to prevent duplicate votes
-VoteSchema.index({ beat1Id: 1, beat2Id: 1, userId: 1 }, { unique: true });
-VoteSchema.index({ beat1Id: 1, beat2Id: 1, ipHash: 1 }, { unique: true });
+// Supprimer le modèle existant s'il existe pour éviter les conflits
+if (mongoose.models.Vote) {
+  delete mongoose.models.Vote;
+}
 
-export default mongoose.models.Vote || mongoose.model<IVote>('Vote', VoteSchema); 
+export default mongoose.model('Vote', voteSchema); 

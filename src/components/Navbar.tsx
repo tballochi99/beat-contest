@@ -40,6 +40,9 @@ export default function Navbar() {
                 <Link href="/contests" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Contests
                 </Link>
+                <Link href="/vote" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                  Vote
+                </Link>
                 <Link href="/leaderboard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                   Leaderboard
                 </Link>
@@ -149,6 +152,13 @@ export default function Navbar() {
             onClick={() => setIsMenuOpen(false)}
           >
             Contests
+          </Link>
+          <Link
+            href="/vote"
+            className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Vote
           </Link>
           <Link
             href="/leaderboard"
