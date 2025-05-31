@@ -6,13 +6,17 @@ import connectDB from './db';
 import User from '@/models/User';
 
 declare module 'next-auth' {
+  interface User {
+    role?: string;
+  }
   interface Session {
     user: {
-      id?: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    }
+      id: string;
+      name: string;
+      email: string;
+      image?: string;
+      role?: string;
+    };
   }
 }
 
@@ -23,51 +27,65 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     CredentialsProvider({
-      name: 'Credentials',
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Missing credentials');
+          throw new Error('Invalid credentials');
         }
 
         await connectDB();
-
         const user = await User.findOne({ email: credentials.email });
+        console.log('Found user:', user);
 
-        if (!user) {
-          throw new Error('No user found');
+        if (!user || !user?.password) {
+          throw new Error('Invalid credentials');
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isCorrectPassword = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
 
-        if (!isValid) {
-          throw new Error('Invalid password');
+        if (!isCorrectPassword) {
+          throw new Error('Invalid credentials');
         }
 
-        return {
+        const userToReturn = {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
           image: user.avatar,
+          role: user.role,
         };
-      }
-    })
+        console.log('Returning user:', userToReturn);
+        return userToReturn;
+      },
+    }),
   ],
   callbacks: {
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
     async jwt({ token, user }) {
+      console.log('JWT Callback - Token:', token);
+      console.log('JWT Callback - User:', user);
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
+      console.log('JWT Callback - Final Token:', token);
       return token;
+    },
+    async session({ session, token }) {
+      console.log('Session Callback - Session:', session);
+      console.log('Session Callback - Token:', token);
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+      }
+      console.log('Session Callback - Final Session:', session);
+      return session;
     },
   },
   pages: {
@@ -76,4 +94,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  secret: process.env.NEXTAUTH_SECRET,
 }; 

@@ -1,124 +1,154 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { checkAudioDuration, extractRandomMinute } from '@/lib/audioUtils';
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import AuthGuard from '@/components/AuthGuard';
 
 export default function ContestsPage() {
+  const { data: session } = useSession();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
-      if (file.type.startsWith('audio/')) {
-        setIsProcessing(true);
-        try {
-          // On extrait une minute aléatoire du fichier
-          const processedFile = await extractRandomMinute(file);
-          setSelectedFile(processedFile as File);
-          const url = URL.createObjectURL(processedFile);
-          setAudioUrl(url);
-          setError(null);
-        } catch (error) {
-          setError('Error processing audio file');
-          setSelectedFile(null);
-          setAudioUrl(null);
-        } finally {
-          setIsProcessing(false);
-        }
-      } else {
-        setError('Please select an audio file');
-        setSelectedFile(null);
-        setAudioUrl(null);
+      if (file.type !== 'audio/mpeg' && file.type !== 'audio/wav') {
+        setError('Please upload an MP3 or WAV file');
+        return;
       }
+      setSelectedFile(file);
+      setError(null);
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
-    
+    if (!selectedFile) {
+      setError('Please select a file first');
+      return;
+    }
+
     setIsUploading(true);
+    setError(null);
+
     try {
-      // Here you would typically upload to your server
-      // For now, we'll just simulate a successful upload
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Production uploaded successfully!');
-      // Reset the form
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      // Réinitialiser le formulaire après un upload réussi
       setSelectedFile(null);
-      setAudioUrl(null);
-    } catch (error) {
-      alert('Error uploading production');
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    } catch (err) {
+      setError('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Active Contests</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-          <h2 className="text-xl font-semibold mb-2">Weekly Beat Battle</h2>
-          <p className="text-gray-400 mb-4">Create a beat using only these samples...</p>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Upload your production (will be automatically trimmed to 1 minute)
-            </label>
-            <input
-              type="file"
-              accept="audio/*"
-              onChange={handleFileSelect}
-              disabled={isProcessing}
-              className={`block w-full text-sm text-gray-300
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-semibold
-                file:bg-purple-600 file:text-white
-                hover:file:bg-purple-700
-                ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-            />
-            {error && (
-              <p className="mt-2 text-sm text-red-500">{error}</p>
-            )}
-            {isProcessing && (
-              <p className="mt-2 text-sm text-purple-500">Processing your audio...</p>
-            )}
-          </div>
 
-          {audioUrl && (
-            <div className="mb-4">
-              <audio
-                ref={audioRef}
-                controls
-                className="w-full"
-                src={audioUrl}
-              >
-                Your browser does not support the audio element.
-              </audio>
-              <p className="mt-2 text-sm text-gray-400">
-                Preview of your 1-minute submission
-              </p>
+      {session ? (
+        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Upload Your Track</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select your track (MP3 or WAV)
+              </label>
+              <input
+                type="file"
+                accept=".mp3,.wav"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-purple-600 file:text-white
+                  hover:file:bg-purple-700
+                  cursor-pointer"
+              />
             </div>
-          )}
 
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Ends in: 3 days</span>
+            {error && (
+              <div className="text-red-400 text-sm">{error}</div>
+            )}
+
+            {selectedFile && (
+              <div className="text-sm text-gray-300">
+                Selected file: {selectedFile.name}
+              </div>
+            )}
+
             <button
               onClick={handleUpload}
-              disabled={!selectedFile || isUploading || isProcessing}
-              className={`${
-                !selectedFile || isUploading || isProcessing
-                  ? 'bg-gray-600 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700'
-              } text-white px-4 py-2 rounded-md text-sm transition-colors`}
+              disabled={!selectedFile || isUploading}
+              className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isUploading ? 'Uploading...' : 'Submit Production'}
+              {isUploading ? 'Uploading...' : 'Upload Track'}
             </button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+          <div className="text-center">
+            <p className="text-gray-300 mb-4">Sign in to upload your track and participate in contests</p>
+            <a 
+              href="/auth/signin" 
+              className="inline-block bg-purple-600 text-white py-2 px-6 rounded-md hover:bg-purple-700"
+            >
+              Sign In
+            </a>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Liste des concours actifs */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Current Contest</h3>
+          <div className="space-y-4">
+            <div className="bg-gray-700 rounded-lg p-4">
+              <h4 className="font-medium">Hip Hop Beat Contest</h4>
+              <p className="text-sm text-gray-300 mt-2">
+                Create a hip hop beat using the provided sample pack.
+              </p>
+              <div className="mt-4 flex justify-between items-center">
+                <span className="text-sm text-gray-400">Ends in 3 days</span>
+                <button className="text-purple-400 hover:text-purple-300 text-sm">
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Classement */}
+        <div className="bg-gray-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Leaderboard</h3>
+          <div className="space-y-2">
+            {[1, 2, 3].map((position) => (
+              <div key={position} className="flex items-center justify-between bg-gray-700 rounded-lg p-3">
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-400">#{position}</span>
+                  <span className="font-medium">Producer {position}</span>
+                </div>
+                <span className="text-purple-400">{100 - (position * 10)} points</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

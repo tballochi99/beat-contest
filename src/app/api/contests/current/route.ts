@@ -5,24 +5,20 @@ import Contest from '@/models/Contest';
 export async function GET() {
   try {
     await connectDB();
-
+    
     const currentContest = await Contest.findOne({
       status: 'active',
-    }).sort({ startDate: -1 });
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date() }
+    }).populate('createdBy', 'name avatar');
 
     if (!currentContest) {
-      return NextResponse.json(
-        { error: 'No active contest found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'No active contest found' }, { status: 404 });
     }
 
     return NextResponse.json(currentContest);
   } catch (error) {
     console.error('Error fetching current contest:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 } 

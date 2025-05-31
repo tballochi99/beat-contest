@@ -21,6 +21,13 @@ export interface IUser extends Document {
     instagram?: string;
     twitter?: string;
   };
+  role: string;
+  rewards: {
+    type: string;
+    amount: number;
+    description: string;
+    date: Date;
+  }[];
 }
 
 const UserSchema: Schema = new Schema({
@@ -85,6 +92,26 @@ const UserSchema: Schema = new Schema({
     instagram: String,
     twitter: String,
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  rewards: [{
+    type: {
+      type: String,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    description: String,
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
 }, {
   timestamps: true,
 });

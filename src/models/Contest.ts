@@ -1,15 +1,15 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
 
-export interface IContest extends Document {
-  themeArtist: string;
-  startDate: Date;
-  endDate: Date;
-  currentRound: number;
-  status: 'upcoming' | 'active' | 'completed';
-}
-
-const ContestSchema: Schema = new Schema({
-  themeArtist: {
+const contestSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  theme: {
     type: String,
     required: true,
   },
@@ -21,18 +21,47 @@ const ContestSchema: Schema = new Schema({
     type: Date,
     required: true,
   },
-  currentRound: {
-    type: Number,
+  coverImage: {
+    type: String,
     required: true,
-    default: 1,
-    enum: [1, 2, 3],
+  },
+  rules: {
+    type: String,
+    required: true,
   },
   status: {
     type: String,
-    required: true,
-    enum: ['upcoming', 'active', 'completed'],
-    default: 'upcoming',
+    enum: ['draft', 'active', 'ended'],
+    default: 'draft',
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  submissions: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    trackUrl: String,
+    submittedAt: Date,
+    votes: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      score: Number,
+      votedAt: Date,
+    }],
+  }],
+}, {
+  timestamps: true,
 });
 
-export default mongoose.models.Contest || mongoose.model<IContest>('Contest', ContestSchema); 
+// Supprimer le modèle existant s'il existe pour éviter les conflits
+if (mongoose.models.Contest) {
+  delete mongoose.models.Contest;
+}
+
+export default mongoose.model('Contest', contestSchema); 
